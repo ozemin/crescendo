@@ -17,7 +17,7 @@ defmodule CrescendoWeb do
   those modules here.
   """
 
-  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt duel.html phoenix.min.js)
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt duel.html play.html phoenix.min.js)
 
   def router do
     quote do

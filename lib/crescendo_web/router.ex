@@ -7,6 +7,13 @@ defmodule CrescendoWeb.Router do
 
   scope "/api", CrescendoWeb do
     pipe_through :api
+
+    post "/players", PlayerController, :create
+  end
+
+  # The playable web client is a static page; "/" just points at it.
+  scope "/", CrescendoWeb do
+    get "/", PageController, :home
   end
 
   # Enable LiveDashboard in development

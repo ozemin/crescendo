@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<title>Crescendo — Müzik Düellosu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="/phoenix.min.js"></script>
+<style>
+  :root {
+    --bg: #09090b;
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-hover: rgba(255, 255, 255, 0.06);
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.12);
+    --ink: #fafafa;
+    --ink-secondary: rgba(255, 255, 255, 0.7);
+    --muted: rgba(255, 255, 255, 0.45);
+    --accent: #a78bfa;
+    --accent-hover: #8b6cf7;
+    --accent-ink: #0a0a0b;
+    --good: #6ee7b7;
+    --good-bg: rgba(110, 231, 183, 0.08);
+    --bad: #fca5a5;
+    --bad-bg: rgba(252, 165, 165, 0.08);
+    --vinyl: #111113;
+    --groove: #19191d;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --dur: 200ms;
+    --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html { height: 100%; }
+
+  body {
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font: 400 0.938rem/1.5 "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: calc(1.25rem + env(safe-area-inset-top)) 1.25rem calc(1.5rem + env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  main { width: 100%; max-width: 24rem; display: flex; flex-direction: column; flex: 1; }
+
+  /* --- wordmark --------------------------------------------------------- */
+
+  .wordmark {
+    font-weight: 600;
+    font-size: 1.125rem;
+    letter-spacing: -0.02em;
+    text-align: center;
+    padding-bottom: 2rem;
+    color: var(--ink);
+  }
+  .wordmark .note { color: var(--accent); }
+
+  /* --- sections --------------------------------------------------------- */
+
+  section[hidden] { display: none; }
+  section { display: flex; flex-direction: column; flex: 1; }
+
+  h1 {
+    font-weight: 600;
+    font-size: 1.625rem;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .sub { color: var(--muted); margin-top: 0.75rem; max-width: 34ch; font-size: 0.875rem; line-height: 1.5; }
+
+  /* --- form ------------------------------------------------------------- */
+
+  form { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 2.5rem; }
+
+  label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--ink-secondary);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.01em;
+  }
+
+  input[type="text"], select {
+    width: 100%;
+    font: inherit;
+    font-size: 0.938rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    min-height: 48px;
+    appearance: none;
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+  }
+  input[type="text"]:hover, select:hover {
+    border-color: var(--line-strong);
+    background: var(--surface-hover);
+  }
+  input[type="text"]::placeholder { color: var(--muted); }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* --- buttons ---------------------------------------------------------- */
+
+  button { font: inherit; border: none; cursor: pointer; border-radius: var(--radius); }
+  button:disabled { opacity: 0.35; cursor: default; }
+
+  .btn {
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: -0.01em;
+    background: var(--accent);
+    color: var(--accent-ink);
+    transition: background var(--dur) var(--ease), transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+  .btn:not(:disabled):hover { background: var(--accent-hover); }
+  .btn:not(:disabled):active { transform: scale(0.98); box-shadow: 0 0 0 rgba(0,0,0,0); }
+
+  .btn-quiet {
+    min-height: 48px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .btn-quiet:hover { color: var(--ink-secondary); border-color: var(--line-strong); }
+
+  .form-error { color: var(--bad); font-size: 0.8125rem; min-height: 1.3em; }
+
+  /* --- scoreboard ------------------------------------------------------- */
+
+  .board {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 1rem 0;
+  }
+  .board .name {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--muted);
+    max-width: 8ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .board .pts {
+    font-weight: 700;
+    font-size: 2rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+  .board .sep { color: var(--muted); font-size: 1.25rem; font-weight: 300; }
+
+  .pips { display: flex; justify-content: center; gap: 0.5rem; margin-top: 0.25rem; }
+  .pip {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px solid var(--line-strong); background: transparent;
+    transition: all var(--dur) var(--ease);
+  }
+  .pip.mine { background: var(--accent); border-color: var(--accent); }
+  .pip.theirs { background: var(--muted); border-color: var(--muted); }
+  .pip.draw { background: var(--line-strong); border-color: var(--line-strong); }
+
+  .roundtag {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+  }
+
+  /* --- the record ------------------------------------------------------- */
+
+  .deck {
+    position: relative;
+    width: min(56vw, 220px);
+    aspect-ratio: 1;
+    margin: 1.75rem auto;
+  }
+  .disc {
+    position: absolute; inset: 0; border-radius: 50%;
+    background:
+      radial-gradient(circle at 50%, transparent 28%, var(--groove) 28.5%, var(--vinyl) 29.5%, var(--vinyl) 35%, var(--groove) 35.5%, var(--vinyl) 36.5%, var(--vinyl) 45%, var(--groove) 45.5%, var(--vinyl) 46.5%, var(--vinyl) 58%, var(--groove) 58.5%, var(--vinyl) 59.5%, var(--vinyl) 72%, var(--groove) 72.5%, var(--vinyl) 73.5%, var(--vinyl) 86%, var(--groove) 86.5%, var(--vinyl) 87.5%, var(--vinyl) 96%, var(--groove) 96.5%, var(--vinyl) 97.5%);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 16px 48px rgba(0, 0, 0, 0.5);
+  }
+  .disc.spinning { animation: spin 2.4s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .label-wrap {
+    position: absolute; inset: 28%;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid var(--line);
+  }
+  .label-wrap .idle-mark {
+    font-size: 1.5rem;
+    color: var(--muted);
+    opacity: 0.6;
+  }
+  canvas.label { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .disc::after { /* spindle hole */
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 8px; height: 8px; border-radius: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bg);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+
+  .deck .count {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 3rem;
+    letter-spacing: -0.04em;
+    color: var(--ink);
+    text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+    opacity: 0; transition: opacity var(--dur) var(--ease);
+    pointer-events: none;
+  }
+  .deck .count.on { opacity: 1; }
+
+  .status { text-align: center; color: var(--muted); min-height: 1.5em; font-size: 0.875rem; }
+  .status strong { color: var(--ink); font-weight: 600; }
+
+  .answer-line { text-align: center; margin-top: 0.35rem; min-height: 1.4em; font-size: 0.8125rem; color: var(--muted); }
+  .answer-line b { color: var(--ink-secondary); font-weight: 500; }
+
+  /* --- answers ---------------------------------------------------------- */
+
+  .options { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.25rem; }
+  .opt {
+    display: flex; align-items: center; gap: 0.75rem;
+    min-height: 52px; padding: 0.625rem 0.875rem;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), transform var(--dur) var(--ease);
+  }
+  .opt:not(:disabled):hover { background: var(--surface-hover); border-color: var(--line-strong); }
+  .opt:not(:disabled):active { transform: scale(0.99); border-color: var(--accent); }
+  .opt .mark {
+    flex: none; width: 1.5rem; height: 1.5rem;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid var(--line-strong);
+    font-size: 0.6875rem; font-weight: 600; color: var(--muted);
+    transition: all var(--dur) var(--ease);
+  }
+  .opt .t { display: block; font-weight: 500; font-size: 0.875rem; }
+  .opt .a { display: block; color: var(--muted); font-size: 0.75rem; margin-top: 0.1rem; }
+  .opt.is-correct { border-color: var(--good); background: var(--good-bg); }
+  .opt.is-correct .mark { border-color: var(--good); color: var(--good); }
+  .opt.is-wrong { border-color: var(--bad); background: var(--bad-bg); }
+  .opt.is-wrong .mark { border-color: var(--bad); color: var(--bad); }
+
+  .game-actions { margin-top: 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  /* --- queue & end screens ---------------------------------------------- */
+
+  .center-fill {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; gap: 0.75rem;
+  }
+  .hint { color: var(--muted); font-size: 0.8125rem; max-width: 30ch; line-height: 1.5; }
+
+  .final-score {
+    font-weight: 700;
+    font-size: 3.5rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    margin: 1rem 0 0.25rem;
+  }
+  .final-word { color: var(--muted); font-size: 0.875rem; }
+  .final-word.win { color: var(--good); }
+
+  .push-bottom { margin-top: auto; padding-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .disc.spinning { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="wordmark">crescendo<span class="note">.</span></div>
+
+  <!-- 1 · join -->
+  <section id="s-join">
+    <h1>Aynı şarkı, iki telefon. İlk bilen turu alır.</h1>
+    <p class="sub">5 turluk düello: şarkı ikinizde aynı anda çalar, kapak pixel pixel netleşir.</p>
+    <form id="join-form">
+      <div>
+        <label for="f-name">Adın</label>
+        <input id="f-name" type="text" maxlength="24" autocomplete="nickname" required>
+      </div>
+      <div>
+        <label for="f-pool">Şarkı havuzu</label>
+        <select id="f-pool">
+          <option value="queen">Queen</option>
+          <option value="rock">Rock</option>
+          <option value="pop">Pop</option>
+          <option value="tarkan">Tarkan</option>
+        </select>
+      </div>
+      <p class="form-error" id="join-error" role="alert"></p>
+      <button class="btn" type="submit">Rakip Bul</button>
+    </form>
+  </section>
+
+  <!-- 2 · queue -->
+  <section id="s-queue" hidden>
+    <div class="center-fill">
+      <div class="deck">
+        <div class="disc spinning" style="animation-duration: 4s"></div>
+      </div>
+      <h1>Rakip aranıyor…</h1>
+      <p class="hint">Arkadaşın da aynı havuzu seçip "Rakip Bul"a bastığında maç başlar.</p>
+    </div>
+    <div class="push-bottom">
+      <button class="btn-quiet" id="btn-cancel">Vazgeç</button>
+    </div>
+  </section>
+
+  <!-- 3 · game -->
+  <section id="s-game" hidden>
+    <div class="board">
+      <span class="name" id="b-me">Sen</span>
+      <span class="pts" id="b-my">0</span>
+      <span class="sep">–</span>
+      <span class="pts" id="b-op">0</span>
+      <span class="name">Rakip</span>
+    </div>
+    <div class="pips" id="pips"></div>
+    <p class="roundtag" id="roundtag">&nbsp;</p>
+
+    <div class="deck">
+      <div class="disc" id="disc">
+        <div class="label-wrap">
+          <span class="idle-mark">♩</span>
+          <canvas class="label" width="320" height="320" hidden></canvas>
+        </div>
+      </div>
+      <div class="count" id="count"></div>
+    </div>
+
+    <p class="status" id="status">Eşleşme tamam.</p>
+    <p class="answer-line" id="answer-line"></p>
+
+    <div class="options" id="options"></div>
+
+    <div class="game-actions">
+      <button class="btn" id="btn-ready">Hazırım</button>
+    </div>
+  </section>
+
+  <!-- 4 · match over -->
+  <section id="s-over" hidden>
+    <div class="center-fill">
+      <h1 id="over-title">Maç bitti</h1>
+      <div class="final-score" id="over-score">0 – 0</div>
+      <p class="final-word" id="over-word"></p>
+    </div>
+    <div class="push-bottom">
+      <button class="btn" id="btn-again">Tekrar Oyna</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const BEST_OF = 5;
+const REVEAL_MS = 30000;
+const START_PX = 48;
+
+const $ = (id) => document.getElementById(id);
+const screens = ["s-join", "s-queue", "s-game", "s-over"];
+const show = (id) => screens.forEach((s) => ($(s).hidden = s !== id));
+
+const state = {
+  me: null,           // {id, name}
+  pool: null,
+  socket: null,
+  mm: null,
+  duel: null,
+  matchId: null,
+  myScore: 0, opScore: 0,
+  results: [],
+  artImage: null, lastPx: null, revealRaf: null, tickTimer: null,
+};
+
+// Tek Audio nesnesi: ilk dokunuşta kilidi açılır, sonraki turlarda src değişir
+// (iOS autoplay kısıtı ancak böyle aşılıyor).
+const snd = new Audio();
+snd.preload = "auto";
+let sndUnlocked = false;
+function unlockAudio() {
+  if (sndUnlocked) return;
+  sndUnlocked = true;
+  snd.muted = true;
+  snd.play().catch(() => {}).finally?.(() => {});
+  snd.pause();
+  snd.muted = false;
+}
+
+/* ---------- join ---------- */
+
+$("f-name").value = localStorage.getItem("crescendo:name") || "";
+
+$("join-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  unlockAudio();
+  const name = $("f-name").value.trim();
+  const pool = $("f-pool").value;
+  const err = $("join-error");
+  err.textContent = "";
+
+  try {
+    // aynı isimle daha önce kayıt olduysak sunucuya tekrar gitme
+    const saved = JSON.parse(localStorage.getItem("crescendo:player") || "null");
+    if (saved && saved.name === name) {
+      state.me = saved;
+    } else {
+      const res = await fetch("/api/players", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error("register");
+      state.me = await res.json();
+      localStorage.setItem("crescendo:player", JSON.stringify(state.me));
+      localStorage.setItem("crescendo:name", name);
+    }
+    state.pool = pool;
+    connectAndQueue();
+  } catch {
+    err.textContent = "Bağlantı kurulamadı. İnternetini kontrol edip tekrar dene.";
+  }
+});
+
+function connectAndQueue() {
+  state.socket = new Phoenix.Socket("/socket", { params: { user_id: state.me.id } });
+  state.socket.onError(() => setStatus("Bağlantı koptu, yeniden deneniyor…"));
+  state.socket.connect();
+
+  state.mm = state.socket.channel("matchmaking:lobby", {});
+  state.mm.on("matched", ({ match_id }) => onMatched(match_id));
+  state.mm.join().receive("ok", () => {
+    state.mm.push("join_pool", { pool: state.pool })
+      .receive("ok", (r) => { if (r.status === "queued") show("s-queue"); })
+      .receive("error", (r) => {
+        show("s-join");
+        $("join-error").textContent =
+          r.reason === "unknown_pool"
+            ? "Bu havuz henüz açık değil. Başka bir havuz seç."
+            : "Sıraya girilemedi, tekrar dene.";
+      });
+  });
+}
+
+$("btn-cancel").addEventListener("click", () => location.reload());
+
+/* ---------- match ---------- */
+
+function onMatched(matchId) {
+  if (state.matchId) return; // push + reply ikilemesi
+  state.matchId = matchId;
+
+  state.duel = state.socket.channel(`duel:${matchId}`, {});
+  state.duel.on("round_loading", onRoundLoading);
+  state.duel.on("all_ready", () => setStatus("İkiniz de hazırsınız. İlk şarkı geliyor…"));
+  state.duel.on("countdown", onCountdown);
+  state.duel.on("round_result", onRoundResult);
+  state.duel.on("match_over", onMatchOver);
+  state.duel.join().receive("ok", () => {
+    $("b-me").textContent = state.me.name;
+    renderPips();
+    show("s-game");
+    setStatus("Rakip bulundu. Hazır olduğunda maç başlar.");
+  });
+}
+
+$("btn-ready").addEventListener("click", () => {
+  unlockAudio();
+  $("btn-ready").disabled = true;
+  state.duel.push("ready", {})
+    .receive("ok", () => {
+      $("btn-ready").hidden = true;
+      setStatus("Rakibin hazır olması bekleniyor…");
+    })
+    .receive("error", () => { $("btn-ready").disabled = false; });
+});
+
+/* ---------- rounds ---------- */
+
+function onRoundLoading({ round_no, preview_url, artwork_url, options }) {
+  $("btn-ready").hidden = true;
+  $("roundtag").textContent = `Tur ${round_no} / ${BEST_OF}`;
+  $("answer-line").textContent = "";
+  setStatus("Şarkı yükleniyor…");
+
+  cancelAnimationFrame(state.revealRaf);
+  $("disc").classList.remove("spinning");
+  state.artImage = null; state.lastPx = null;
+  const canvas = document.querySelector("canvas.label");
+  canvas.hidden = true;
+  if (artwork_url) {
+    const img = new Image();
+    img.onload = () => { state.artImage = img; pixelate(START_PX); };
+    img.src = artwork_url.replace("100x100", "400x400");
+  }
+
+  snd.src = preview_url;
+  snd.load();
+
+  const box = $("options");
+  box.innerHTML = "";
+  options.forEach((o, i) => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.disabled = true;
+    b.innerHTML = `<span class="mark">${"ABCD"[i]}</span><span><span class="t"></span><span class="a"></span></span>`;
+    b.querySelector(".t").textContent = o.title;
+    b.querySelector(".a").textContent = o.artist;
+    b.addEventListener("click", () => answer(i, b));
+    box.appendChild(b);
+  });
+}
+
+function onCountdown({ start_at }) {
+  // saat kayması güvenliği: makul aralık dışındaysa 3 sn'ye sabitle
+  let delay = start_at - Date.now();
+  if (delay < 0 || delay > 10000) delay = 3000;
+  const goAt = performance.now() + delay;
+
+  const count = $("count");
+  count.classList.add("on");
+  clearInterval(state.tickTimer);
+  state.tickTimer = setInterval(() => {
+    const left = goAt - performance.now();
+    if (left > 0) {
+      count.textContent = Math.ceil(left / 1000);
+    } else {
+      clearInterval(state.tickTimer);
+      count.classList.remove("on");
+      go();
+    }
+  }, 60);
+}
+
+function go() {
+  snd.currentTime = 0;
+  snd.play().catch(() => setStatus("Ses başlatılamadı — ekrana bir kez dokun."));
+  $("disc").classList.add("spinning");
+  document.querySelectorAll(".opt").forEach((b) => (b.disabled = false));
+  startReveal();
+  setStatus("Hangi şarkı çalıyor?");
+}
+
+function answer(i, btn, attempt = 0) {
+  state.duel.push("answer", { index: i })
+    .receive("ok", (r) => {
+      if (r.result === "locked") {
+        btn.classList.add("is-wrong");
+        btn.querySelector(".mark").textContent = "✗";
+        document.querySelectorAll(".opt").forEach((b) => (b.disabled = true));
+        setStatus("Yanlış. Bu turda başka cevap veremezsin.");
+      }
+    })
+    .receive("error", (r) => {
+      // start_at ile sunucu zamanlayıcısı arasında milisaniyelik fark olabilir
+      if (r.reason === "not_playing" && attempt < 20) {
+        setTimeout(() => answer(i, btn, attempt + 1), 100);
+      }
+    });
+}
+
+function onRoundResult({ winner, correct_index, correct, scores }) {
+  clearInterval(state.tickTimer);
+  cancelAnimationFrame(state.revealRaf);
+  snd.pause();
+  $("disc").classList.remove("spinning");
+  pixelate(1);
+
+  document.querySelectorAll(".opt").forEach((b, i) => {
+    b.disabled = true;
+    if (i === correct_index) {
+      b.classList.add("is-correct");
+      b.querySelector(".mark").textContent = "✓";
+    }
+  });
+
+  for (const [id, s] of Object.entries(scores)) {
+    if (parseInt(id, 10) === state.me.id) state.myScore = s;
+    else state.opScore = s;
+  }
+  $("b-my").textContent = state.myScore;
+  $("b-op").textContent = state.opScore;
+
+  const outcome = winner === null ? "draw" : winner === state.me.id ? "mine" : "theirs";
+  state.results.push(outcome);
+  renderPips();
+
+  setStatus(
+    outcome === "mine" ? "Turu sen aldın." :
+    outcome === "theirs" ? "Turu rakip aldı." :
+    "Bu turda bilen olmadı."
+  );
+  $("answer-line").innerHTML = "";
+  const line = $("answer-line");
+  line.append("Çalan şarkı: ");
+  const b = document.createElement("b");
+  b.textContent = `${correct.title} — ${correct.artist}`;
+  line.append(b);
+}
+
+function onMatchOver({ winner, scores }) {
+  clearInterval(state.tickTimer);
+  cancelAnimationFrame(state.revealRaf);
+  snd.pause();
+
+  if (scores) {
+    for (const [id, s] of Object.entries(scores)) {
+      if (parseInt(id, 10) === state.me.id) state.myScore = s;
+      else state.opScore = s;
+    }
+  }
+
+  const won = winner === state.me.id;
+  const draw = winner === null;
+  $("over-title").textContent = draw ? "Berabere." : won ? "Kazandın!" : "Bu sefer olmadı.";
+  $("over-score").textContent = `${state.myScore} – ${state.opScore}`;
+  const word = $("over-word");
+  word.textContent = draw
+    ? "Kafa kafaya bitti. Rövanş şart."
+    : won ? "Kulakların formda. Bir maç daha?" : "Rövanş her şeyi değiştirir.";
+  word.classList.toggle("win", won);
+  show("s-over");
+}
+
+$("btn-again").addEventListener("click", () => location.reload());
+
+/* ---------- helpers ---------- */
+
+function setStatus(text) { $("status").textContent = text; }
+
+function renderPips() {
+  const box = $("pips");
+  box.innerHTML = "";
+  for (let i = 0; i < BEST_OF; i++) {
+    const d = document.createElement("span");
+    d.className = "pip " + (state.results[i] || "");
+    box.appendChild(d);
+  }
+}
+
+// kapağı px bloklarıyla çiz: küçük çöz. küçült (smooth), smoothing kapalı büyüt
+function pixelate(px) {
+  if (!state.artImage) return;
+  const c = document.querySelector("canvas.label");
+  const ctx = c.getContext("2d");
+  c.hidden = false;
+  if (px <= 1) {
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(state.artImage, 0, 0, c.width, c.height);
+    return;
+  }
+  const w = Math.max(1, Math.round(c.width / px));
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(state.artImage, 0, 0, w, w);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(c, 0, 0, w, w, 0, 0, c.width, c.height);
+}
+
+function startReveal() {
+  const t0 = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - t0) / REVEAL_MS);
+    const px = Math.max(1, Math.round(START_PX * (1 - t) * (1 - t)));
+    if (px !== state.lastPx) { pixelate(px); state.lastPx = px; }
+    if (t < 1) state.revealRaf = requestAnimationFrame(step);
+  };
+  state.revealRaf = requestAnimationFrame(step);
+}
+</script>
+</body>
+</html>
