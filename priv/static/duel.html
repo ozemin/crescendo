@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crescendo — Duel Test Console</title>
+<script src="/phoenix.min.js"></script>
+<style>
+  :root {
+    --bg: #08070d;
+    --card: rgba(255, 255, 255, 0.035);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --text: #ece9f4;
+    --muted: #8b87a0;
+    --accent-a: #a78bfa;
+    --accent-b: #f472b6;
+    --good: #34d399;
+    --bad: #f87171;
+    --radius: 18px;
+    font-size: 15px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(900px 500px at 15% -10%, rgba(167, 139, 250, 0.14), transparent 60%),
+      radial-gradient(900px 500px at 85% -10%, rgba(244, 114, 182, 0.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    padding: 2.2rem 1.4rem 4rem;
+  }
+
+  .wrap { max-width: 1060px; margin: 0 auto; }
+
+  header.site { text-align: center; margin-bottom: 2rem; }
+  header.site h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: 0.45em;
+    text-indent: 0.45em;
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header.site p { color: var(--muted); margin-top: 0.4rem; font-size: 0.85rem; letter-spacing: 0.12em; }
+
+  .arena { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+  @media (max-width: 880px) { .arena { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    padding: 1.3rem;
+    backdrop-filter: blur(14px);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .panel > .head { display: flex; align-items: center; justify-content: space-between; }
+  .panel > .head h2 { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.18em; color: var(--muted); }
+  .chip {
+    font-size: 0.7rem; letter-spacing: 0.1em; padding: 0.3rem 0.7rem;
+    border-radius: 999px; border: 1px solid var(--card-border); color: var(--muted);
+    transition: all 0.3s;
+  }
+  .chip.live { color: var(--good); border-color: rgba(52, 211, 153, 0.4); box-shadow: 0 0 12px rgba(52, 211, 153, 0.15); }
+  .chip.wait { color: var(--accent-a); border-color: rgba(167, 139, 250, 0.4); }
+
+  /* setup */
+  .setup { display: flex; gap: 0.6rem; }
+  .setup input, .setup select {
+    background: rgba(0,0,0,0.35); border: 1px solid var(--card-border);
+    color: var(--text); border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .setup input:focus, .setup select:focus { border-color: var(--accent-a); }
+  .setup input { width: 4.2rem; text-align: center; }
+  .setup select { flex: 1; }
+
+  button {
+    font: inherit; cursor: pointer; border: none; border-radius: 10px;
+    color: var(--text); transition: all 0.18s ease;
+  }
+  button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .btn-primary {
+    background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+    color: #14101f; font-weight: 700; padding: 0.6rem 1.1rem; letter-spacing: 0.04em;
+  }
+  .btn-primary:not(:disabled):hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(167, 139, 250, 0.35); }
+
+  .btn-ready {
+    background: rgba(167, 139, 250, 0.12); border: 1px solid rgba(167, 139, 250, 0.45);
+    color: var(--accent-a); font-weight: 700; padding: 0.65rem; width: 100%; letter-spacing: 0.1em;
+  }
+  .btn-ready:not(:disabled):hover { background: rgba(167, 139, 250, 0.22); }
+
+  /* stage */
+  .stage { display: none; flex-direction: column; gap: 1rem; }
+  .stage.on { display: flex; }
+
+  .scoreline {
+    display: flex; align-items: center; justify-content: center; gap: 1.1rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .scoreline .who { font-size: 0.75rem; color: var(--muted); letter-spacing: 0.1em; width: 5.5rem; }
+  .scoreline .who.me { text-align: right; }
+  .scoreline .num { font-size: 2rem; font-weight: 800; }
+  .scoreline .dash { color: var(--muted); }
+
+  .pips { display: flex; justify-content: center; gap: 0.45rem; }
+  .pip { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.12); transition: all 0.4s; }
+  .pip.mine { background: var(--accent-a); box-shadow: 0 0 8px rgba(167,139,250,0.6); }
+  .pip.theirs { background: var(--accent-b); box-shadow: 0 0 8px rgba(244,114,182,0.6); }
+  .pip.draw { background: var(--muted); }
+
+  .art-wrap {
+    position: relative; width: 190px; height: 190px; margin: 0 auto;
+    border-radius: 14px; overflow: hidden;
+    border: 1px solid var(--card-border);
+    background: rgba(0,0,0,0.4);
+  }
+  .art-wrap .ph {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; color: rgba(255,255,255,0.12);
+  }
+  .art-wrap canvas {
+    position: relative; display: block; width: 100%; height: 100%;
+    image-rendering: pixelated; /* upscale'de blokları keskin tut */
+  }
+  .overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 3.4rem; font-weight: 800; color: #fff;
+    background: rgba(8, 7, 13, 0.45); backdrop-filter: blur(2px);
+    text-shadow: 0 0 30px rgba(167,139,250,0.9);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .overlay.on { opacity: 1; }
+  .overlay.pulse { animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { transform: scale(1.12); } }
+
+  .options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .opt {
+    display: flex; align-items: center; gap: 0.75rem; text-align: left;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--card-border);
+    padding: 0.6rem 0.75rem; border-radius: 12px; width: 100%;
+  }
+  .opt:not(:disabled):hover { border-color: var(--accent-a); background: rgba(167,139,250,0.08); transform: translateX(3px); }
+  .opt .key {
+    width: 1.7rem; height: 1.7rem; flex: none; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 0.8rem; font-weight: 800;
+    background: rgba(167,139,250,0.15); color: var(--accent-a);
+  }
+  .opt .t { font-weight: 600; font-size: 0.9rem; }
+  .opt .a { color: var(--muted); font-size: 0.75rem; }
+  .opt.correct { border-color: var(--good); background: rgba(52,211,153,0.12); }
+  .opt.correct .key { background: rgba(52,211,153,0.25); color: var(--good); }
+  .opt.wrong { border-color: var(--bad); background: rgba(248,113,113,0.10); animation: shake 0.3s; }
+  .opt.wrong .key { background: rgba(248,113,113,0.25); color: var(--bad); }
+  @keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  .banner {
+    text-align: center; font-weight: 700; font-size: 0.95rem; letter-spacing: 0.06em;
+    padding: 0.55rem; border-radius: 10px; min-height: 2.3rem;
+    color: var(--muted); background: rgba(0,0,0,0.25);
+    transition: all 0.3s;
+  }
+  .banner.win { color: var(--good); background: rgba(52,211,153,0.1); }
+  .banner.lose { color: var(--bad); background: rgba(248,113,113,0.08); }
+  .banner.neutral { color: var(--accent-a); background: rgba(167,139,250,0.08); }
+
+  .rowline { display: flex; gap: 0.6rem; align-items: center; }
+  .rowline label { color: var(--muted); font-size: 0.78rem; display: flex; align-items: center; gap: 0.35rem; cursor: pointer; }
+  .rowline .spacer { flex: 1; }
+  .roundtag { color: var(--muted); font-size: 0.78rem; letter-spacing: 0.14em; }
+
+  .log {
+    background: rgba(0,0,0,0.45); border: 1px solid var(--card-border);
+    border-radius: 12px; padding: 0.7rem 0.9rem; height: 130px; overflow-y: auto;
+    font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 0.68rem; line-height: 1.7;
+    color: var(--muted);
+  }
+  .log .ev { color: var(--accent-a); }
+  .log .err { color: var(--bad); }
+  .log .ok { color: var(--good); }
+  .log time { opacity: 0.5; margin-right: 0.5em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <h1>CRESCENDO</h1>
+    <p>DUEL TEST CONSOLE — iki oyuncu, tek ekran</p>
+  </header>
+  <div class="arena" id="arena"></div>
+</div>
+
+<template id="panel-tpl">
+  <section class="panel">
+    <div class="head">
+      <h2></h2>
+      <span class="chip">bağlı değil</span>
+    </div>
+
+    <div class="setup">
+      <input class="uid" type="number" min="1" title="user_id">
+      <select class="pool">
+        <option value="queen">Queen (seed'li)</option>
+        <option value="rock">Rock</option>
+        <option value="pop">Pop</option>
+        <option value="tarkan">Tarkan</option>
+      </select>
+      <button class="btn-primary find">Eşleş</button>
+    </div>
+
+    <div class="stage">
+      <div class="scoreline">
+        <span class="who me">SEN</span>
+        <span class="num my-score">0</span>
+        <span class="dash">—</span>
+        <span class="num op-score">0</span>
+        <span class="who">RAKİP</span>
+      </div>
+      <div class="pips"></div>
+
+      <div class="art-wrap">
+        <div class="ph">♪</div>
+        <canvas class="art" width="380" height="380" hidden></canvas>
+        <div class="overlay"></div>
+      </div>
+
+      <div class="options"></div>
+
+      <div class="rowline">
+        <span class="roundtag">TUR —</span>
+      </div>
+      <button class="btn-ready">HAZIR</button>
+      <div class="banner">eşleşme bekleniyor…</div>
+    </div>
+
+    <pre class="log"></pre>
+  </section>
+</template>
+
+<script>
+const BEST_OF = 5;
+const REVEAL_MS = 30000;  // kapağın pikselden netliğe açılma süresi (tur uzunluğu)
+const START_PX = 56;      // başlangıç blok kabalığı (canvas 380px → ~7 blok)
+
+class Player {
+  constructor(root, label, defaultUid) {
+    this.el = root;
+    this.label = label;
+    this.$(".head h2").textContent = label;
+    this.$(".uid").value = defaultUid;
+    this.reset();
+
+    this.$(".find").onclick = () => this.findMatch();
+    this.$(".btn-ready").onclick = () => this.sendReady();
+  }
+
+  $(sel) { return this.el.querySelector(sel); }
+
+  reset() {
+    this.userId = null; this.matchId = null; this.duel = null;
+    this.myScore = 0; this.opScore = 0; this.roundNo = 0;
+    this.audio = null; this.playTimer = null; this.tickTimer = null;
+    this.artImage = null; this.revealRaf = null; this.lastPx = null;
+    this.results = []; // her tur: "mine" | "theirs" | "draw"
+  }
+
+  log(msg, cls) {
+    const t = new Date().toLocaleTimeString("tr-TR", { hour12: false });
+    const line = document.createElement("div");
+    line.innerHTML = `<time>${t}</time><span class="${cls || ""}">${msg}</span>`;
+    const box = this.$(".log");
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  chip(text, cls) {
+    const c = this.$(".chip");
+    c.textContent = text;
+    c.className = "chip " + (cls || "");
+  }
+
+  banner(text, cls) {
+    const b = this.$(".banner");
+    b.textContent = text;
+    b.className = "banner " + (cls || "");
+  }
+
+  // -- bağlantı + eşleşme ---------------------------------------------------
+
+  findMatch() {
+    this.userId = parseInt(this.$(".uid").value, 10);
+    const pool = this.$(".pool").value;
+
+    this.socket = new Phoenix.Socket("/socket", { params: { user_id: this.userId } });
+    this.socket.onError(() => this.log("socket hatası", "err"));
+    this.socket.connect();
+    this.chip("bağlı", "live");
+
+    this.mm = this.socket.channel("matchmaking:lobby", {});
+    this.mm.on("matched", ({ match_id }) => this.onMatched(match_id));
+    this.mm.join()
+      .receive("ok", () => {
+        this.log("matchmaking:lobby katıldı", "ok");
+        this.mm.push("join_pool", { pool })
+          .receive("ok", (r) => { this.log(`join_pool → ${r.status}`, "ev"); if (r.status === "queued") this.chip("kuyrukta", "wait"); })
+          .receive("error", (e) => this.log(`join_pool hata: ${e.reason}`, "err"));
+      })
+      .receive("error", (e) => this.log(`lobby join hatası: ${JSON.stringify(e)}`, "err"));
+
+    this.$(".find").disabled = true;
+    this.$(".stage").classList.add("on");
+  }
+
+  onMatched(matchId) {
+    if (this.matchId) return; // push + reply ikilemesine karşı
+    this.matchId = matchId;
+    this.log(`matched → ${matchId.slice(0, 8)}…`, "ev");
+    this.chip("maçta", "live");
+    this.banner("rakip bulundu — HAZIR'a bas", "neutral");
+
+    this.duel = this.socket.channel(`duel:${matchId}`, {});
+    this.duel.on("round_loading", (p) => this.onRoundLoading(p));
+    this.duel.on("all_ready",     () => this.log("all_ready — maç başlıyor", "ev"));
+    this.duel.on("countdown",     (p) => this.onCountdown(p));
+    this.duel.on("round_result",  (p) => this.onRoundResult(p));
+    this.duel.on("match_over",    (p) => this.onMatchOver(p));
+    this.duel.join()
+      .receive("ok", () => { this.log("duel kanalına katıldı", "ok"); this.readyEnabled(true); })
+      .receive("error", (e) => this.log(`duel join hatası: ${e.reason}`, "err"));
+  }
+
+  // -- tur akışı --------------------------------------------------------------
+
+  onRoundLoading({ round_no, preview_url, artwork_url, options }) {
+    this.roundNo = round_no;
+    this.log(`round_loading — tur ${round_no}`, "ev");
+    this.$(".roundtag").textContent = `TUR ${round_no} / ${BEST_OF}`;
+    this.banner("önizleme yükleniyor…");
+    this.clearTimers();
+
+    // kapak: canvas'a en kaba piksel halinde çizilir; yoksa ♪ placeholder kalır
+    cancelAnimationFrame(this.revealRaf);
+    this.artImage = null; this.lastPx = null;
+    this.$("canvas.art").hidden = true;
+    if (artwork_url) {
+      const img = new Image();
+      img.onload = () => { this.artImage = img; this.pixelate(START_PX); };
+      img.src = artwork_url.replace("100x100", "400x400");
+    }
+
+    // şıklar (kilitli başlar; start_at'te açılır)
+    const box = this.$(".options");
+    box.innerHTML = "";
+    options.forEach((o, i) => {
+      const b = document.createElement("button");
+      b.className = "opt";
+      b.disabled = true;
+      b.innerHTML = `<span class="key">${"ABCD"[i]}</span><span><div class="t"></div><div class="a"></div></span>`;
+      b.querySelector(".t").textContent = o.title;
+      b.querySelector(".a").textContent = o.artist;
+      b.onclick = () => this.answer(i, b);
+      box.appendChild(b);
+    });
+
+    // preview'ı buffer'la — countdown süresi indirme penceresi
+    this.audio = new Audio(preview_url);
+    this.audio.preload = "auto";
+    this.audio.addEventListener("canplaythrough",
+      () => this.log("preview buffer'landı", "ok"), { once: true });
+    this.audio.addEventListener("error",
+      () => this.log("preview yüklenemedi", "err"), { once: true });
+    this.audio.load();
+  }
+
+  onCountdown({ start_at }) {
+    this.log(`countdown — start_at: ${start_at}`, "ev");
+    const overlay = this.$(".overlay");
+    overlay.classList.add("on", "pulse");
+
+    this.tickTimer = setInterval(() => {
+      const left = start_at - Date.now();
+      if (left > 0) {
+        overlay.textContent = Math.ceil(left / 1000);
+        this.banner("senkron başlıyor…", "neutral");
+      } else {
+        clearInterval(this.tickTimer);
+        overlay.textContent = "♪";
+        setTimeout(() => overlay.classList.remove("on", "pulse"), 500);
+        this.go();
+      }
+    }, 60);
+  }
+
+  go() {
+    // start_at anı: çalma + blur açılışı + şıklar aktif
+    if (this.audio) this.audio.play().catch((e) => this.log(`autoplay engellendi: ${e.message}`, "err"));
+    this.startReveal();
+    this.el.querySelectorAll(".opt").forEach((b) => (b.disabled = false));
+    this.banner("ÇALIYOR — bil bakalım!", "neutral");
+  }
+
+  answer(i, btn) {
+    this.duel.push("answer", { index: i })
+      .receive("ok", (r) => {
+        this.log(`answer(${"ABCD"[i]}) → ${r.result}`, r.result === "correct" ? "ok" : "err");
+        if (r.result === "locked") {
+          btn.classList.add("wrong");
+          this.el.querySelectorAll(".opt").forEach((b) => (b.disabled = true));
+          this.banner("yanlış — bu tur kilitlendin", "lose");
+        }
+      })
+      .receive("error", (e) => this.log(`answer reddedildi: ${e.reason}`, "err"));
+  }
+
+  onRoundResult({ winner, correct_index, correct, scores }) {
+    this.clearTimers();
+    if (this.audio) { this.audio.pause(); }
+    cancelAnimationFrame(this.revealRaf);
+    this.pixelate(1); // kapağı tamamen netleştir
+
+    const opts = this.el.querySelectorAll(".opt");
+    opts.forEach((b, i) => { b.disabled = true; if (i === correct_index) b.classList.add("correct"); });
+
+    for (const [id, s] of Object.entries(scores)) {
+      if (parseInt(id, 10) === this.userId) this.myScore = s; else this.opScore = s;
+    }
+    this.$(".my-score").textContent = this.myScore;
+    this.$(".op-score").textContent = this.opScore;
+
+    const outcome = winner === null ? "draw" : winner === this.userId ? "mine" : "theirs";
+    this.results.push(outcome);
+    this.renderPips();
+
+    const name = `${correct.title} — ${correct.artist}`;
+    if (outcome === "mine")   this.banner(`✓ TURU SEN ALDIN · ${name}`, "win");
+    if (outcome === "theirs") this.banner(`✗ turu rakip aldı · ${name}`, "lose");
+    if (outcome === "draw")   this.banner(`— berabere · ${name}`);
+    this.log(`round_result — kazanan: ${winner ?? "yok"}, doğru: ${"ABCD"[correct_index]}`, "ev");
+  }
+
+  onMatchOver({ winner, scores, reason }) {
+    this.clearTimers();
+    if (this.audio) this.audio.pause();
+    this.chip("maç bitti");
+    if (reason) { this.banner(`maç iptal: ${reason}`, "lose"); return; }
+    if (winner === null)          this.banner("MAÇ BERABERE", "neutral");
+    else if (winner === this.userId) this.banner("🏆 MAÇI KAZANDIN!", "win");
+    else                          this.banner("maçı rakip kazandı", "lose");
+    this.log(`match_over — skor: ${JSON.stringify(scores)}`, "ev");
+    this.readyEnabled(false);
+
+    const again = this.$(".find");
+    again.disabled = false;
+    again.textContent = "Tekrar Eşleş";
+    this.matchId = null; this.results = []; this.myScore = 0; this.opScore = 0;
+  }
+
+  // -- yardımcılar ------------------------------------------------------------
+
+  // maç başına tek sefer: iki taraf da gönderince sunucu turları kendisi akıtır
+  sendReady() {
+    this.readyEnabled(false);
+    this.duel.push("ready", {})
+      .receive("ok", () => {
+        this.log("ready ✓", "ok");
+        this.$(".btn-ready").textContent = "HAZIR ✓";
+        this.banner("rakibin hazır olması bekleniyor…", "neutral");
+      })
+      .receive("error", (e) => { this.log(`ready hatası: ${e.reason}`, "err"); this.readyEnabled(true); });
+  }
+
+  readyEnabled(on) {
+    const b = this.$(".btn-ready");
+    b.disabled = !on;
+    if (on) b.textContent = "HAZIR";
+  }
+
+  // kapağı px büyüklüğünde bloklarla çiz: önce küçük çöz. küçült (smooth),
+  // sonra smoothing kapalı büyüt → keskin pixel mozaiği
+  pixelate(px) {
+    if (!this.artImage) return;
+    const c = this.$("canvas.art");
+    const ctx = c.getContext("2d");
+    c.hidden = false;
+    if (px <= 1) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(this.artImage, 0, 0, c.width, c.height);
+      return;
+    }
+    const w = Math.max(1, Math.round(c.width / px));
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(this.artImage, 0, 0, w, w);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(c, 0, 0, w, w, 0, 0, c.width, c.height);
+  }
+
+  // start_at'ten itibaren REVEAL_MS boyunca blokları kademeli incelt
+  startReveal() {
+    const t0 = performance.now();
+    const step = (now) => {
+      const t = Math.min(1, (now - t0) / REVEAL_MS);
+      const px = Math.max(1, Math.round(START_PX * (1 - t) * (1 - t)));
+      if (px !== this.lastPx) { this.pixelate(px); this.lastPx = px; }
+      if (t < 1) this.revealRaf = requestAnimationFrame(step);
+    };
+    this.revealRaf = requestAnimationFrame(step);
+  }
+
+  renderPips() {
+    const box = this.$(".pips");
+    box.innerHTML = "";
+    for (let i = 0; i < BEST_OF; i++) {
+      const d = document.createElement("span");
+      d.className = "pip " + (this.results[i] || "");
+      box.appendChild(d);
+    }
+  }
+
+  clearTimers() {
+    clearInterval(this.tickTimer);
+    cancelAnimationFrame(this.revealRaf);
+    this.$(".overlay").classList.remove("on", "pulse");
+  }
+}
+
+const arena = document.getElementById("arena");
+const tpl = document.getElementById("panel-tpl");
+[["OYUNCU 1", 1], ["OYUNCU 2", 2]].forEach(([label, uid]) => {
+  const node = tpl.content.cloneNode(true);
+  arena.appendChild(node);
+  new Player(arena.lastElementChild, label, uid);
+});
+</script>
+</body>
+</html>
